@@ -38,8 +38,10 @@ To run the project locally, follow these steps:
 
 ## Credentials
 Credentials for testing the application:
+```bash
     - email: admin@gmail.com
     - password: admin123
+```
 
 ## Group Members
     - Blanco, Noel Jhumel G.
