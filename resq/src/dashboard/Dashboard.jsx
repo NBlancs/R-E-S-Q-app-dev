@@ -37,7 +37,7 @@ const Dashboard = ({ onLogout }) => {
     },
     {
       id: '#INC-002',
-      type: 'Smoke',
+      type: 'Gas',
       location: 'Zone C - Lobby',
       method: 'Camera AI',
       time: '08:30 AM',
