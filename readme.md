@@ -14,7 +14,7 @@ Fire response times in Cagayan De Oro City frequently exceed the 7-minute target
 
 # Tech Stack
     - ReactJS (Frontend)
-
+    - Supabase (Backend & Database)
 # Documentation
 
 ## Getting Started
@@ -47,5 +47,4 @@ Credentials for testing the application:
     - Blanco, Noel Jhumel G.
     - Soria, Glenn M.
     - Baltomore, Mike Nino
-    - Angelo
     - Joshua Mark Eala
