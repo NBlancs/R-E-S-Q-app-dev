@@ -28,7 +28,7 @@ const LoginPage = ({ onLogin }) => {
   return (
     <div className="login-wrapper">
       <div className="login-branding">
-        <h1>RESQ</h1>
+        <h1>R.E.S.Q</h1>
         <p>(Rapid Emergency Surveillance & Quenching)</p>
       </div>
 
