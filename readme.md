@@ -7,7 +7,7 @@ Fire response times in Cagayan De Oro City frequently exceed the 7-minute target
 
 
 # Target Users
-    - Residents of Cagayan De Oro City
+    - Industries susceptible to gas leakage and fire disasters.
     - Fire Responders (BFP)
     - Local Government Units (LGUS)
     - System Administrators
