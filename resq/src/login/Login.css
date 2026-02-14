@@ -8,8 +8,11 @@
 /* Branding Section */
 .login-branding {
   display: none;
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  /* Image maybe? */
+  background-image: url("/src/assets/resq-bg.jpg");
+  background-repeat: no-repeat;
+  background-size:cover;
+  background-color: rgba(0, 0, 0, 0.5);
+  background-blend-mode: overlay;
   color: white;
   flex-direction: column;
   justify-content: center;
@@ -28,7 +31,6 @@
 .login-branding p {
   margin-top: 1rem;
   font-size: 1.25rem;
-  opacity: 0.9;
   max-width: 400px;
   line-height: 1.5;
 }
