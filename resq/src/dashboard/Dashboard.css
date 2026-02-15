@@ -191,11 +191,16 @@
 .camera-placeholder {
     background-color: #000;
     color: #fff;
-    height: 250px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    /* height: 250px; */
     border-radius: 4px;
+    overflow: hidden;
+}
+
+.camera-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 /* System Status */
