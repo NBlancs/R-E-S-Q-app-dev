@@ -275,3 +275,50 @@
     color: #333;
     /* Darker text for yellow background */
 }
+
+.app-footer {
+  background: #071122;
+  color: #dbe9f8;
+  padding: 12px 20px;
+  font-size: 14px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footer-left p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.footer-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-center a {
+  color: #9fc5ff;
+  text-decoration: none;
+}
+
+.footer-center .sep {
+  color: rgba(255,255,255,0.2);
+  margin: 0 6px;
+}
+
+.footer-right .version {
+  color: rgba(255,255,255,0.6);
+}
+
+@media (max-width: 600px) {
+  .footer-inner { flex-direction: column; text-align: center; }
+  .footer-center { order: 3; }
+}

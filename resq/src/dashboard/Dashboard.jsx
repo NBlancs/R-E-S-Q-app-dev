@@ -5,6 +5,7 @@ import AlertsList from '../components/AlertsList';
 import CameraPanel from '../components/CameraPanel';
 import SystemStatus from '../components/SystemStatus';
 import IncidentsTable from '../components/IncidentsTable';
+import Footer from '../components/Footer';
 
 import './Dashboard.css';
 
@@ -65,7 +66,10 @@ const Dashboard = ({ onLogout }) => {
 
         <IncidentsTable incidents={incidents} />
       </main>
+      <Footer />
     </div>
+        
+
   );
 };
 
