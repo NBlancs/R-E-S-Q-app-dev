@@ -26,12 +26,17 @@ To run the project locally, follow these steps:
    git clone https://github.com/NBlancs/R-E-S-Q-app-dev.git
    ```
 
-2. **Install Dependencies:**
+2. **Change Directory:**
+   ```bash
+   cd resq
+   ```
+
+3. **Install Dependencies:**
    ```bash
    npm install
    ```
 
-3. **Start the Development Server:**
+4. **Start the Development Server:**
    ```bash
    npm run dev
    ```
