@@ -44,3 +44,68 @@
 .read-the-docs {
   color: #888;
 }
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  background-color: #111;
+  color: white;
+  height: 70px;
+  border-bottom: 2px solid #ff3b30;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-nav {
+  flex-grow: 1;
+  margin-left: 3rem;
+}
+
+.nav-list {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  color: #888;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-item:hover {
+  color: #ff3b30;
+}
+
+.nav-item.active {
+  color: white;
+  border-bottom: 2px solid #ff3b30;
+}
+
+/* Existing Profile Styles */
+.user-profile {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #222;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}

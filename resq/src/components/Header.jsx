@@ -5,7 +5,20 @@ const Header = ({ onLogout }) => {
 
   return (
     <header className="dashboard-header">
-      <h1>R-E-S-Q Dashboard</h1>
+      <div className="header-left">
+        <h1>R-E-S-Q Dashboard</h1>
+      </div>
+
+      {/* --- NEW NAVBAR SECTION --- */}
+      <nav className="header-nav">
+        <ul className="nav-list">
+          <li className="nav-item active">Overview</li>
+          <li className="nav-item">Incident Map</li>
+          <li className="nav-item">Camera Feed</li>
+          <li className="nav-item">Reports</li>
+        </ul>
+      </nav>
+      {/* ------------------------- */}
 
       <div
         className="user-profile"
