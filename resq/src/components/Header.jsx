@@ -9,7 +9,6 @@ const Header = ({ onLogout }) => {
         <h1>R-E-S-Q Dashboard</h1>
       </div>
 
-      {/* --- NEW NAVBAR SECTION --- */}
       <nav className="header-nav">
         <ul className="nav-list">
           <li className="nav-item active">Overview</li>
@@ -18,7 +17,6 @@ const Header = ({ onLogout }) => {
           <li className="nav-item">Reports</li>
         </ul>
       </nav>
-      {/* ------------------------- */}
 
       <div
         className="user-profile"

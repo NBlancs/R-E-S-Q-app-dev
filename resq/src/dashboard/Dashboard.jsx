@@ -8,6 +8,8 @@ import IncidentsTable from '../components/IncidentsTable';
 
 import './Dashboard.css';
 
+
+// json this one
 const Dashboard = ({ onLogout }) => {
   const [alerts, setAlerts] = useState([
     {
