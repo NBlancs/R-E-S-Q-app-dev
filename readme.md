@@ -13,8 +13,13 @@ Fire response times in Cagayan De Oro City frequently exceed the 7-minute target
     - System Administrators
 
 # Tech Stack
-    - ReactJS (Frontend)
-    - Supabase (Backend & Database)
+   MERN STACK
+    
+    - Mongo DB
+    - Express
+    - React
+    - Node
+
 # Documentation
 
 ## Getting Started
