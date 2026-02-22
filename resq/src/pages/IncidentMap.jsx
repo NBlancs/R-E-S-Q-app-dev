@@ -1,13 +1,15 @@
-import IncidentsTable from '../components/IncidentsTable';
-import dashboardData from '../data/dashboardData.json';
+import '../styles/IncidentMap.css';
 
 const IncidentMap = () => {
-  const { incidents } = dashboardData;
-
   return (
-    <>
-      <IncidentsTable incidents={incidents} />
-    </>
+    <div className="incident-map-container">
+      <div className="incident-map-header">
+        <h2>Live Incident Map</h2>
+      </div>
+      <div className="incident-map-view simple-placeholder">
+        <div className="map-placeholder-text">Placeholder Map</div>
+      </div>
+    </div>
   );
 };
 
