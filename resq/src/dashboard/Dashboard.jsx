@@ -14,7 +14,11 @@ import dashboardData from '../data/dashboardData.json';
 const Dashboard = ({ onLogout }) => {
   const [alerts, setAlerts] = useState(dashboardData.alerts);
 
-  const incidents = dashboardData.incidents;
+  const [incidents, setIncidents] = useState(dashboardData.incidents || []);
+
+  const handleIncidentsChange = (next) => {
+    setIncidents(next);
+  };
 
   const handleAcknowledge = (id) => {
     setAlerts(prev => prev.filter(alert => alert.id !== id));
@@ -32,7 +36,7 @@ const Dashboard = ({ onLogout }) => {
           <SystemStatus />
         </div>
 
-        <IncidentsTable incidents={incidents} />
+        <IncidentsTable incidents={incidents} onIncidentsChange={handleIncidentsChange} />
       </main>
       <Footer />
     </div>

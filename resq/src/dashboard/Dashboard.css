@@ -374,3 +374,10 @@
   .footer-inner { flex-direction: column; text-align: center; }
   .footer-center { order: 3; }
 }
+
+/* Inline form error styling for incidents form */
+.input-error {
+    color: #e74c3c;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
