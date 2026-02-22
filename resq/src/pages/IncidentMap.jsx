@@ -1,29 +1,15 @@
-import IncidentsTable from '../components/IncidentsTable';
+import '../styles/IncidentMap.css';
 
 const IncidentMap = () => {
-  const incidents = [
-    {
-      id: '#INC-001',
-      type: 'Fire',
-      location: 'Zone A - North',
-      method: 'Heat Sensor',
-      time: '09:15 AM',
-      status: 'resolved'
-    },
-    {
-      id: '#INC-002',
-      type: 'Gas',
-      location: 'Zone C - Lobby',
-      method: 'Camera AI',
-      time: '08:30 AM',
-      status: 'investigating'
-    }
-  ];
-
   return (
-    <>
-      <IncidentsTable incidents={incidents} />
-    </>
+    <div className="incident-map-container">
+      <div className="incident-map-header">
+        <h2>Live Incident Map</h2>
+      </div>
+      <div className="incident-map-view simple-placeholder">
+        <div className="map-placeholder-text">Placeholder Map</div>
+      </div>
+    </div>
   );
 };
 

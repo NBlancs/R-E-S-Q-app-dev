@@ -19,7 +19,7 @@ const Footer = () => {
         </div>
 
         <div className="footer-right">
-          <span className="version">v1.0.0</span>
+          <span className="version">v1.0.4</span>
         </div>
       </div>
     </footer>
