@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import '../styles/CamerasTable.css';
 import '../styles/Modal.css';
 import '../styles/CRUDButtons.css';
@@ -7,6 +9,9 @@ const CamerasTable = ({ cameras }) => {
   const [data, setData] = useState(cameras || []);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [lastActiveRange, setLastActiveRange] = useState([null, null]);
+  const [lastActiveStart, lastActiveEnd] = lastActiveRange;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -160,15 +165,39 @@ const CamerasTable = ({ cameras }) => {
     setEditErrors({});
   };
 
+  const parseLastActive = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const locationOptions = [...new Set(data.map((cam) => cam.location).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b)));
+
   const filtered = data.filter(cam => {
     const q = search.toLowerCase();
     const matchesSearch =
-      cam.id.toLowerCase().includes(q) ||
-      cam.name.toLowerCase().includes(q) ||
-      cam.location.toLowerCase().includes(q);
+      (cam.id || '').toLowerCase().includes(q) ||
+      (cam.name || '').toLowerCase().includes(q) ||
+      (cam.location || '').toLowerCase().includes(q);
     const matchesStatus =
       statusFilter === 'all' || cam.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesLocation =
+      locationFilter === 'all' || cam.location === locationFilter;
+
+    const lastActiveDate = parseLastActive(cam.lastActive);
+    const rangeStart = lastActiveStart
+      ? new Date(lastActiveStart.getFullYear(), lastActiveStart.getMonth(), lastActiveStart.getDate(), 0, 0, 0, 0)
+      : null;
+    const rangeEnd = lastActiveEnd
+      ? new Date(lastActiveEnd.getFullYear(), lastActiveEnd.getMonth(), lastActiveEnd.getDate(), 23, 59, 59, 999)
+      : null;
+
+    const matchesLastActiveRange =
+      (!rangeStart && !rangeEnd) ||
+      (lastActiveDate && (!rangeStart || lastActiveDate >= rangeStart) && (!rangeEnd || lastActiveDate <= rangeEnd));
+
+    return matchesSearch && matchesStatus && matchesLocation && matchesLastActiveRange;
   });
 
   return (
@@ -194,9 +223,33 @@ const CamerasTable = ({ cameras }) => {
           <option value="offline">Offline</option>
         </select>
 
-        <button className="btn btn-add" onClick={() => setIsAddModalOpen(true)}>
-          Add Camera
-        </button>
+        <select
+          className="cameras-filter"
+          value={locationFilter}
+          onChange={e => setLocationFilter(e.target.value)}
+        >
+          <option value="all">All Locations</option>
+          {locationOptions.map((location) => (
+            <option key={location} value={location}>{location}</option>
+          ))}
+        </select>
+
+        <DatePicker
+          selectsRange
+          startDate={lastActiveStart}
+          endDate={lastActiveEnd}
+          onChange={(range) => setLastActiveRange(range)}
+          isClearable
+          placeholderText="Last Active range"
+          className="cameras-filter"
+          dateFormat="yyyy-MM-dd"
+        />
+
+        <div className="cameras-actions">
+          <button className="btn btn-add" onClick={() => setIsAddModalOpen(true)}>
+            Add Camera
+          </button>
+        </div>
       </div>
 
       <table className="cameras-table">
