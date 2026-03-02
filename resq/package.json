@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "react": "^19.2.0",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.1",
     "react-time-picker": "^8.0.2"
   },
