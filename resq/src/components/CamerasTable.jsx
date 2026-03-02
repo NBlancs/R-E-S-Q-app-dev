@@ -45,30 +45,42 @@ const CamerasTable = ({ cameras }) => {
   }, [data]);
 
   // Update "online duration" every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setData(prevData =>
-        prevData.map(cam => {
-          if (cam.status === 'online') {
-            const last = new Date(cam.lastActive).getTime();
-            const now = new Date().getTime();
-            const diffMs = now - last;
-            const hours = Math.floor(diffMs / (1000 * 60 * 60));
-            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-            return {
-              ...cam,
-              onlineDuration: `${hours}h ${mins}m ${secs}s`
-            };
-          } else {
-            // Keep previous onlineDuration if offline
-            return { ...cam };
-          }
-        })
-      );
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+ // Update "online duration" every second
+useEffect(() => {
+  const interval = setInterval(() => {
+    setData(prevData =>
+      prevData.map(cam => {
+        if (cam.status === 'online') {
+          const last = new Date(cam.lastActive).getTime();
+          const now = new Date().getTime();
+          const diffMs = now - last;
+
+          const totalSeconds = Math.floor(diffMs / 1000);
+
+          const days = Math.floor(totalSeconds / (60 * 60 * 24));
+          const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+          const mins = Math.floor((totalSeconds % (60 * 60)) / 60);
+          const secs = totalSeconds % 60;
+
+          let duration =
+            days > 0
+              ? `${days}d ${hours}h ${mins}m ${secs}s`
+              : `${hours}h ${mins}m ${secs}s`;
+
+          return {
+            ...cam,
+            onlineDuration: duration,
+            over24Hours: days > 0
+          };
+        } else {
+          return { ...cam };
+        }
+      })
+    );
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, []);
 
   const generateNextCameraId = () => {
     const max = data.reduce((max, cam) => {
