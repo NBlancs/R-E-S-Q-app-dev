@@ -70,7 +70,9 @@ function App() {
                                 canAcknowledgeAlerts={currentUser?.role !== 'bfp'}
                                 navItems={
                                     currentUser?.role === 'bfp'
-                                        ? []
+                                        ? [
+                                            { to: '/bfp', label: 'Incidents Map' },
+                                        ]
                                         : [
                                             { to: '/overview', label: 'Overview' },
                                             { to: '/camera-feed', label: 'Camera Feed' },
