@@ -44,19 +44,11 @@ const to24 = (h12, min, period) => {
 
 const TimePickerDropdown = ({ value, onChange, placeholder = 'Select time' }) => {
   const parsed = parse24(value);
-  const [hour, setHour] = useState(parsed.h12);
-  const [minute, setMinute] = useState(parsed.min);
-  const [period, setPeriod] = useState(parsed.period);
+  const hour = parsed.h12;
+  const minute = parsed.min;
+  const period = parsed.period;
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
-  // Sync internal state when value prop changes externally
-  useEffect(() => {
-    const p = parse24(value);
-    setHour(p.h12);
-    setMinute(p.min);
-    setPeriod(p.period);
-  }, [value]);
 
   // Close on outside click
   useEffect(() => {
@@ -66,9 +58,6 @@ const TimePickerDropdown = ({ value, onChange, placeholder = 'Select time' }) =>
   }, []);
 
   const select = (h, m, p) => {
-    setHour(h);
-    setMinute(m);
-    setPeriod(p);
     onChange(to24(h, m, p));
   };
 

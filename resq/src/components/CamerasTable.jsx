@@ -1,12 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../styles/CamerasTable.css';
 import '../styles/Modal.css';
 import '../styles/CRUDButtons.css';
 
-const CamerasTable = ({ cameras }) => {
-  const [data, setData] = useState(cameras || []);
+const EMPTY_CAMERA_FORM = {
+  name: '',
+  location: '',
+  status: 'online',
+};
+
+const toDateValue = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const buildOnlineDuration = (lastActive) => {
+  const dateValue = toDateValue(lastActive);
+
+  if (!dateValue) {
+    return '-';
+  }
+
+  const elapsedMilliseconds = Date.now() - dateValue.getTime();
+  const hours = Math.floor(elapsedMilliseconds / (1000 * 60 * 60));
+  const minutes = Math.floor((elapsedMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((elapsedMilliseconds % (1000 * 60)) / 1000);
+
+  return `${hours}h ${minutes}m ${seconds}s`;
+};
+
+const CamerasTable = ({
+  cameras = [],
+  isLoading = false,
+  error = '',
+  onCreateCamera,
+  onUpdateCamera,
+  onDeleteCamera,
+}) => {
+  const [data, setData] = useState(cameras);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
@@ -16,146 +53,68 @@ const CamerasTable = ({ cameras }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [newCamera, setNewCamera] = useState({
-    name: '',
-    location: '',
-    status: 'online'
-  });
-  const [editCamera, setEditCamera] = useState({
-    name: '',
-    location: '',
-    status: 'online'
-  });
+  const [newCamera, setNewCamera] = useState(EMPTY_CAMERA_FORM);
+  const [editCamera, setEditCamera] = useState(EMPTY_CAMERA_FORM);
   const [errors, setErrors] = useState({});
   const [editErrors, setEditErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load from props or localStorage
   useEffect(() => {
-    if (cameras && cameras.length) {
-      setData(cameras);
-      localStorage.setItem('cameras', JSON.stringify(cameras));
-    } else {
-      const stored = localStorage.getItem('cameras');
-      if (stored) setData(JSON.parse(stored));
-    }
+    setData(cameras);
   }, [cameras]);
 
   useEffect(() => {
-    localStorage.setItem('cameras', JSON.stringify(data));
-  }, [data]);
-
-  // Update "online duration" every second
-  useEffect(() => {
     const interval = setInterval(() => {
-      setData(prevData =>
-        prevData.map(cam => {
-          if (cam.status === 'online') {
-            const last = new Date(cam.lastActive).getTime();
-            const now = new Date().getTime();
-            const diffMs = now - last;
-            const hours = Math.floor(diffMs / (1000 * 60 * 60));
-            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-            return {
-              ...cam,
-              onlineDuration: `${hours}h ${mins}m ${secs}s`
-            };
-          } else {
-            // Keep previous onlineDuration if offline
-            return { ...cam };
-          }
-        })
-      );
+      setData((previousData) => previousData.map((camera) => {
+        if (camera.status !== 'online') {
+          return camera;
+        }
+
+        return {
+          ...camera,
+          onlineDuration: buildOnlineDuration(camera.lastActiveRaw || camera.lastActive),
+        };
+      }));
     }, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
-  const generateNextCameraId = () => {
-    const max = data.reduce((max, cam) => {
-      const num = parseInt(cam.id?.replace('CAM-', '') || 0);
-      return Math.max(max, num);
-    }, 0);
-    return `CAM-${String(max + 1).padStart(3, '0')}`;
-  };
+  const locationOptions = [...new Set(data.map((camera) => camera.location).filter(Boolean))]
+    .sort((left, right) => String(left).localeCompare(String(right)));
 
-  const handleAddCamera = () => {
-    const newErrors = {};
-    if (!newCamera.name.trim()) newErrors.name = 'Name is required';
-    if (!newCamera.location.trim()) newErrors.location = 'Location is required';
-    if (Object.keys(newErrors).length) {
-      setErrors(newErrors);
-      return;
-    }
+  const filtered = data.filter((camera) => {
+    const query = search.toLowerCase();
+    const matchesSearch =
+      (camera.id || '').toLowerCase().includes(query)
+      || (camera.name || '').toLowerCase().includes(query)
+      || (camera.location || '').toLowerCase().includes(query);
 
-    const camera = {
-      id: generateNextCameraId(),
-      ...newCamera,
-      lastActive: new Date().toLocaleString(),
-      onlineDuration: '0h 0m 0s' // start counter at 0
-    };
+    const matchesStatus = statusFilter === 'all' || camera.status === statusFilter;
+    const matchesLocation = locationFilter === 'all' || camera.location === locationFilter;
 
-    setData([camera, ...data]);
-    setNewCamera({ name: '', location: '', status: 'online' });
-    setErrors({});
-    setIsAddModalOpen(false);
-  };
+    const lastActiveDate = toDateValue(camera.lastActiveRaw || camera.lastActive);
+    const rangeStart = lastActiveStart
+      ? new Date(lastActiveStart.getFullYear(), lastActiveStart.getMonth(), lastActiveStart.getDate(), 0, 0, 0, 0)
+      : null;
+    const rangeEnd = lastActiveEnd
+      ? new Date(lastActiveEnd.getFullYear(), lastActiveEnd.getMonth(), lastActiveEnd.getDate(), 23, 59, 59, 999)
+      : null;
 
-  const handleStartEdit = (cam) => {
-    setEditingId(cam.id);
-    setEditCamera({
-      name: cam.name || '',
-      location: cam.location || '',
-      status: cam.status || 'online'
-    });
-    setEditErrors({});
-    setIsEditModalOpen(true);
-  };
+    const matchesLastActiveRange =
+      (!rangeStart && !rangeEnd)
+      || (
+        lastActiveDate
+        && (!rangeStart || lastActiveDate >= rangeStart)
+        && (!rangeEnd || lastActiveDate <= rangeEnd)
+      );
 
-  const handleUpdateCamera = () => {
-    const newErrors = {};
-    if (!editCamera.name.trim()) newErrors.name = 'Name is required';
-    if (!editCamera.location.trim()) newErrors.location = 'Location is required';
-    if (Object.keys(newErrors).length) {
-      setEditErrors(newErrors);
-      return;
-    }
-
-    const next = data.map((cam) => {
-      if (cam.id !== editingId) return cam;
-
-      const previousStatus = cam.status;
-      const now = new Date().toLocaleString();
-
-      if (previousStatus !== 'online' && editCamera.status === 'online') {
-        return {
-          ...cam,
-          ...editCamera,
-          lastActive: now,
-          onlineDuration: '0h 0m 0s'
-        };
-      }
-
-      return {
-        ...cam,
-        ...editCamera
-      };
-    });
-
-    setData(next);
-    setEditingId(null);
-    setIsEditModalOpen(false);
-  };
-
-  const handleDeleteCamera = () => {
-    if (!deleteTarget) return;
-    const next = data.filter((cam) => cam.id !== deleteTarget.id);
-    setData(next);
-    setDeleteTarget(null);
-  };
+    return matchesSearch && matchesStatus && matchesLocation && matchesLastActiveRange;
+  });
 
   const closeAddModal = () => {
     setIsAddModalOpen(false);
-    setNewCamera({ name: '', location: '', status: 'online' });
+    setNewCamera(EMPTY_CAMERA_FORM);
     setErrors({});
   };
 
@@ -165,44 +124,98 @@ const CamerasTable = ({ cameras }) => {
     setEditErrors({});
   };
 
-  const parseLastActive = (value) => {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const validateCamera = (cameraInput) => {
+    const validationErrors = {};
+
+    if (!cameraInput.name.trim()) {
+      validationErrors.name = 'Name is required';
+    }
+
+    if (!cameraInput.location.trim()) {
+      validationErrors.location = 'Location is required';
+    }
+
+    return validationErrors;
   };
 
-  const locationOptions = [...new Set(data.map((cam) => cam.location).filter(Boolean))]
-    .sort((a, b) => String(a).localeCompare(String(b)));
+  const handleAddCamera = async () => {
+    const validationErrors = validateCamera(newCamera);
 
-  const filtered = data.filter(cam => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      (cam.id || '').toLowerCase().includes(q) ||
-      (cam.name || '').toLowerCase().includes(q) ||
-      (cam.location || '').toLowerCase().includes(q);
-    const matchesStatus =
-      statusFilter === 'all' || cam.status === statusFilter;
-    const matchesLocation =
-      locationFilter === 'all' || cam.location === locationFilter;
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
 
-    const lastActiveDate = parseLastActive(cam.lastActive);
-    const rangeStart = lastActiveStart
-      ? new Date(lastActiveStart.getFullYear(), lastActiveStart.getMonth(), lastActiveStart.getDate(), 0, 0, 0, 0)
-      : null;
-    const rangeEnd = lastActiveEnd
-      ? new Date(lastActiveEnd.getFullYear(), lastActiveEnd.getMonth(), lastActiveEnd.getDate(), 23, 59, 59, 999)
-      : null;
+    try {
+      setIsSubmitting(true);
+      await onCreateCamera({
+        name: newCamera.name.trim(),
+        location: newCamera.location.trim(),
+        status: newCamera.status,
+      });
+      closeAddModal();
+    } catch (submitError) {
+      setErrors({ form: submitError.message || 'Unable to create camera.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    const matchesLastActiveRange =
-      (!rangeStart && !rangeEnd) ||
-      (lastActiveDate && (!rangeStart || lastActiveDate >= rangeStart) && (!rangeEnd || lastActiveDate <= rangeEnd));
+  const handleStartEdit = (camera) => {
+    setEditingId(camera.backendId);
+    setEditCamera({
+      name: camera.name || '',
+      location: camera.location || '',
+      status: camera.status || 'online',
+    });
+    setEditErrors({});
+    setIsEditModalOpen(true);
+  };
 
-    return matchesSearch && matchesStatus && matchesLocation && matchesLastActiveRange;
-  });
+  const handleUpdateCamera = async () => {
+    const validationErrors = validateCamera(editCamera);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditErrors(validationErrors);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onUpdateCamera(editingId, {
+        name: editCamera.name.trim(),
+        location: editCamera.location.trim(),
+        status: editCamera.status,
+      });
+      closeEditModal();
+    } catch (submitError) {
+      setEditErrors({ form: submitError.message || 'Unable to update camera.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCamera = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onDeleteCamera(deleteTarget.backendId);
+      setDeleteTarget(null);
+    } catch (submitError) {
+      setErrors({ form: submitError.message || 'Unable to delete camera.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <section className="dashboard-section history-section">
       <h2>Camera List</h2>
+
+      {error && <p className="profile-error">{error}</p>}
 
       <div className="cameras-controls">
         <input
@@ -210,23 +223,24 @@ const CamerasTable = ({ cameras }) => {
           className="cameras-search"
           placeholder="Search cameras..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(event) => setSearch(event.target.value)}
         />
 
         <select
           className="cameras-filter"
           value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
+          onChange={(event) => setStatusFilter(event.target.value)}
         >
           <option value="all">All Status</option>
           <option value="online">Online</option>
           <option value="offline">Offline</option>
+          <option value="maintenance">Maintenance</option>
         </select>
 
         <select
           className="cameras-filter"
           value={locationFilter}
-          onChange={e => setLocationFilter(e.target.value)}
+          onChange={(event) => setLocationFilter(event.target.value)}
         >
           <option value="all">All Locations</option>
           {locationOptions.map((location) => (
@@ -266,24 +280,24 @@ const CamerasTable = ({ cameras }) => {
         </thead>
 
         <tbody>
-          {filtered.length > 0 ? (
-            filtered.map(cam => (
-              <tr key={cam.id}>
-                <td>{cam.id}</td>
-                <td>{cam.name}</td>
-                <td>{cam.location}</td>
+          {!isLoading && filtered.length > 0 ? (
+            filtered.map((camera) => (
+              <tr key={camera.backendId || camera.id}>
+                <td>{camera.id}</td>
+                <td>{camera.name}</td>
+                <td>{camera.location}</td>
                 <td>
-                  <span className={`camera-status ${cam.status}`}>
-                    {cam.status}
+                  <span className={`camera-status ${camera.status}`}>
+                    {camera.status}
                   </span>
                 </td>
-                <td>{cam.lastActive}</td>
-                <td>{cam.status === 'online' ? cam.onlineDuration : '-'}</td>
+                <td>{camera.lastActive}</td>
+                <td>{camera.status === 'online' ? (camera.onlineDuration || buildOnlineDuration(camera.lastActiveRaw || camera.lastActive)) : '-'}</td>
                 <td className="row-actions">
-                  <button className="btn btn-edit" onClick={() => handleStartEdit(cam)}>
+                  <button className="btn btn-edit" onClick={() => handleStartEdit(camera)}>
                     Edit
                   </button>
-                  <button className="btn btn-delete" onClick={() => setDeleteTarget(cam)}>
+                  <button className="btn btn-delete" onClick={() => setDeleteTarget(camera)}>
                     Delete
                   </button>
                 </td>
@@ -292,17 +306,16 @@ const CamerasTable = ({ cameras }) => {
           ) : (
             <tr>
               <td colSpan="7" className="no-results">
-                No cameras found.
+                {isLoading ? 'Loading cameras...' : 'No cameras found.'}
               </td>
             </tr>
           )}
         </tbody>
       </table>
 
-      {/* ADD CAMERA MODAL */}
       {isAddModalOpen && (
         <div className="modal-overlay" onClick={closeAddModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
             <h3>Add Camera</h3>
 
             <div className="modal-form-grid">
@@ -310,50 +323,40 @@ const CamerasTable = ({ cameras }) => {
                 <label>Name</label>
                 <input
                   value={newCamera.name}
-                  onChange={(e) =>
-                    setNewCamera({ ...newCamera, name: e.target.value })
-                  }
+                  onChange={(event) => setNewCamera({ ...newCamera, name: event.target.value })}
                 />
-                {errors.name && (
-                  <div className="input-error">{errors.name}</div>
-                )}
+                {errors.name && <div className="input-error">{errors.name}</div>}
               </div>
 
               <div className="field">
                 <label>Location</label>
                 <input
                   value={newCamera.location}
-                  onChange={(e) =>
-                    setNewCamera({ ...newCamera, location: e.target.value })
-                  }
+                  onChange={(event) => setNewCamera({ ...newCamera, location: event.target.value })}
                 />
-                {errors.location && (
-                  <div className="input-error">{errors.location}</div>
-                )}
+                {errors.location && <div className="input-error">{errors.location}</div>}
               </div>
 
               <div className="field field-full">
                 <label>Status</label>
                 <select
                   value={newCamera.status}
-                  onChange={(e) =>
-                    setNewCamera({ ...newCamera, status: e.target.value })
-                  }
+                  onChange={(event) => setNewCamera({ ...newCamera, status: event.target.value })}
                 >
                   <option value="online">Online</option>
                   <option value="offline">Offline</option>
+                  <option value="maintenance">Maintenance</option>
                 </select>
               </div>
             </div>
 
+            {errors.form && <p className="profile-error">{errors.form}</p>}
+
             <div className="modal-actions">
-              <button className="btn btn-add" onClick={handleAddCamera}>
-                Save
+              <button className="btn btn-add" onClick={handleAddCamera} disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save'}
               </button>
-              <button
-                className="btn"
-                onClick={closeAddModal}
-              >
+              <button className="btn" onClick={closeAddModal} disabled={isSubmitting}>
                 Cancel
               </button>
             </div>
@@ -361,10 +364,9 @@ const CamerasTable = ({ cameras }) => {
         </div>
       )}
 
-      {/* EDIT CAMERA MODAL */}
       {isEditModalOpen && (
         <div className="modal-overlay" onClick={closeEditModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
             <h3>Edit Camera</h3>
 
             <div className="modal-form-grid">
@@ -372,47 +374,40 @@ const CamerasTable = ({ cameras }) => {
                 <label>Name</label>
                 <input
                   value={editCamera.name}
-                  onChange={(e) =>
-                    setEditCamera({ ...editCamera, name: e.target.value })
-                  }
+                  onChange={(event) => setEditCamera({ ...editCamera, name: event.target.value })}
                 />
-                {editErrors.name && (
-                  <div className="input-error">{editErrors.name}</div>
-                )}
+                {editErrors.name && <div className="input-error">{editErrors.name}</div>}
               </div>
 
               <div className="field">
                 <label>Location</label>
                 <input
                   value={editCamera.location}
-                  onChange={(e) =>
-                    setEditCamera({ ...editCamera, location: e.target.value })
-                  }
+                  onChange={(event) => setEditCamera({ ...editCamera, location: event.target.value })}
                 />
-                {editErrors.location && (
-                  <div className="input-error">{editErrors.location}</div>
-                )}
+                {editErrors.location && <div className="input-error">{editErrors.location}</div>}
               </div>
 
               <div className="field field-full">
                 <label>Status</label>
                 <select
                   value={editCamera.status}
-                  onChange={(e) =>
-                    setEditCamera({ ...editCamera, status: e.target.value })
-                  }
+                  onChange={(event) => setEditCamera({ ...editCamera, status: event.target.value })}
                 >
                   <option value="online">Online</option>
                   <option value="offline">Offline</option>
+                  <option value="maintenance">Maintenance</option>
                 </select>
               </div>
             </div>
 
+            {editErrors.form && <p className="profile-error">{editErrors.form}</p>}
+
             <div className="modal-actions">
-              <button className="btn btn-edit" onClick={handleUpdateCamera}>
-                Save
+              <button className="btn btn-edit" onClick={handleUpdateCamera} disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save'}
               </button>
-              <button className="btn" onClick={closeEditModal}>
+              <button className="btn" onClick={closeEditModal} disabled={isSubmitting}>
                 Cancel
               </button>
             </div>
@@ -420,17 +415,16 @@ const CamerasTable = ({ cameras }) => {
         </div>
       )}
 
-      {/* DELETE CONFIRMATION */}
       {deleteTarget && (
         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="modal-content modal-confirm" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content modal-confirm" onClick={(event) => event.stopPropagation()}>
             <h3>Delete Camera</h3>
             <p>Delete camera {deleteTarget.id}? This action cannot be undone.</p>
             <div className="modal-actions">
-              <button className="btn btn-delete" onClick={handleDeleteCamera}>
-                Delete
+              <button className="btn btn-delete" onClick={handleDeleteCamera} disabled={isSubmitting}>
+                {isSubmitting ? 'Deleting...' : 'Delete'}
               </button>
-              <button className="btn" onClick={() => setDeleteTarget(null)}>
+              <button className="btn" onClick={() => setDeleteTarget(null)} disabled={isSubmitting}>
                 Cancel
               </button>
             </div>

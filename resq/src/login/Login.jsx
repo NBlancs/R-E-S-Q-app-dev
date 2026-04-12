@@ -1,41 +1,35 @@
 import React, { useState } from 'react';
 import './Login.css';
-import fallbackUsersData from '../data/users.json';
+import { loginUser, setAuthSession } from '../services/api';
 
 
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login Attempted with:', { email, password });
-
-    let usersData = fallbackUsersData;
+    setError('');
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/users');
+      const result = await loginUser({
+        email: email.trim(),
+        password,
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to load users');
-      }
+      setAuthSession({
+        token: result.token,
+        user: result.user,
+      });
 
-      usersData = await response.json();
-    } catch {
-      console.warn('Falling back to local users data for login validation.');
-    }
-
-    const matchedUser = usersData.users.find(
-      user => user.email.toLowerCase() === email.trim().toLowerCase() && user.password === password
-    );
-
-    // login logic dri
-    if (matchedUser) {
-      console.log('Login successful');
-      onLogin(matchedUser);
-    } else {
-      console.log('Invalid credentials');
-      alert('Invalid credentials');
+      onLogin(result.user);
+    } catch (submitError) {
+      setError(submitError.message || 'Unable to sign in.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -61,7 +55,7 @@ const LoginPage = ({ onLogin }) => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@gmaill.com"
+                placeholder="name@gmail.com"
                 required
               />
             </div>
@@ -78,8 +72,10 @@ const LoginPage = ({ onLogin }) => {
               />
             </div>
 
-            <button type="submit" className="login-button">
-              Sign In
+            {error && <p className="profile-error">{error}</p>}
+
+            <button type="submit" className="login-button" disabled={isSubmitting}>
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 

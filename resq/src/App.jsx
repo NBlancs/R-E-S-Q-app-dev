@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './login/Login'
 import Layout from './components/Layout'
@@ -9,6 +9,13 @@ import CameraList from './pages/CameraList';
 import Reports from './pages/Reports'
 import Profile from './pages/Profile'
 import dashboardData from './data/dashboardData.json'
+import {
+    clearAuthSession,
+    fetchProfile,
+    getAuthToken,
+    getStoredUser,
+    setAuthSession,
+} from './services/api'
 import './dashboard/Dashboard.css'
 import './App.css'
 
@@ -24,6 +31,56 @@ function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [alerts, setAlerts] = useState(dashboardData.alerts);
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const restoreSession = async () => {
+            const token = getAuthToken();
+            const storedUser = getStoredUser();
+
+            if (!token || !storedUser) {
+                if (isMounted) {
+                    setIsAuthChecking(false);
+                }
+                return;
+            }
+
+            try {
+                const profile = await fetchProfile();
+
+                if (!isMounted) {
+                    return;
+                }
+
+                const mergedUser = {
+                    ...storedUser,
+                    ...profile,
+                };
+
+                setAuthSession({ token, user: mergedUser });
+                setCurrentUser(mergedUser);
+                setIsLoggedIn(true);
+            } catch {
+                clearAuthSession();
+                if (isMounted) {
+                    setCurrentUser(null);
+                    setIsLoggedIn(false);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsAuthChecking(false);
+                }
+            }
+        };
+
+        restoreSession();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const fallbackPath = currentUser?.role === 'bfp' ? '/bfp' : '/overview';
 
@@ -33,6 +90,7 @@ function App() {
     };
 
     const handleLogout = () => {
+        clearAuthSession();
         setCurrentUser(null);
         setIsLoggedIn(false);
     };
@@ -44,6 +102,10 @@ function App() {
     const handleUserUpdated = (updatedUser) => {
         setCurrentUser(updatedUser);
     };
+
+    if (isAuthChecking) {
+        return <div className="app-shell-loading">Loading session...</div>;
+    }
 
     return (
         <BrowserRouter>
@@ -128,7 +190,7 @@ function App() {
                     />
                     <Route
                         path="/profile"
-                        element={<Profile role={currentUser?.role} onUserUpdated={handleUserUpdated} />}
+                        element={<Profile onUserUpdated={handleUserUpdated} />}
                     />
                 </Route>
             </Routes>

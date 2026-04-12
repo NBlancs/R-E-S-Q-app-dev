@@ -39,19 +39,24 @@ const SensorDonut = ({ data, size = 170, strokeWidth = 24 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const total = data.reduce((sum, item) => sum + item.value, 0);
-  let accumulatedFraction = 0;
+  const segments = data.map((item, index) => {
+    const fraction = item.value / total;
+    const dashLength = fraction * circumference;
+    const accumulatedFraction = data
+      .slice(0, index)
+      .reduce((sum, previousItem) => sum + (previousItem.value / total), 0);
+
+    return {
+      ...item,
+      dashLength,
+      dashOffset: -accumulatedFraction * circumference,
+    };
+  });
 
   return (
     <svg className="donut-chart" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-label="Sensor health donut chart" role="img">
       <g transform={`translate(${size / 2}, ${size / 2}) rotate(-90)`}>
-        {data.map((item) => {
-          const fraction = item.value / total;
-          const dashLength = fraction * circumference;
-          const dashOffset = -accumulatedFraction * circumference;
-
-          accumulatedFraction += fraction;
-
-          return (
+        {segments.map((item) => (
             <circle
               key={item.label}
               r={radius}
@@ -60,12 +65,11 @@ const SensorDonut = ({ data, size = 170, strokeWidth = 24 }) => {
               fill="transparent"
               stroke={item.color}
               strokeWidth={strokeWidth}
-              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
-              strokeDashoffset={dashOffset}
+              strokeDasharray={`${item.dashLength} ${circumference - item.dashLength}`}
+              strokeDashoffset={item.dashOffset}
               strokeLinecap="butt"
             />
-          );
-        })}
+          ))}
       </g>
       <text x="50%" y="48%" className="donut-total" textAnchor="middle">
         {total}
@@ -77,8 +81,14 @@ const SensorDonut = ({ data, size = 170, strokeWidth = 24 }) => {
   );
 };
 
-const SummaryCards = () => {
+const SummaryCards = ({ summary }) => {
   const sensorTotal = sensorHealth.reduce((sum, item) => sum + item.value, 0);
+  const liveSummary = [
+    { label: 'Cameras', value: summary?.camera_count ?? '-' },
+    { label: 'Incidents', value: summary?.incident_count ?? '-' },
+    { label: 'Open', value: summary?.open_incidents ?? '-' },
+    { label: 'Resolved', value: summary?.resolved_incidents ?? '-' },
+  ];
 
   const chartWidth = 420;
   const chartHeight = 180;
@@ -101,6 +111,23 @@ const SummaryCards = () => {
 
   return (
     <section className="summary-section">
+      <div className="summary-card">
+        <h3>Live System Overview</h3>
+        <ul className="response-status-list" aria-label="Live overview counts">
+          {liveSummary.map((item) => (
+            <li key={item.label} className="response-status-item">
+              <div className="response-status-main">
+                <div>
+                  <p className="response-status-label">{item.label}</p>
+                  <p className="response-status-detail">From backend system overview</p>
+                </div>
+              </div>
+              <strong className="response-status-count">{item.value}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="summary-card">
         <h3>Temperature &amp; Air Quality Trends</h3>
         <p className="summary-subtitle">Average values across key zones (last 24 hours)</p>
