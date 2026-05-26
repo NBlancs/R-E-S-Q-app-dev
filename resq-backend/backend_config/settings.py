@@ -22,6 +22,14 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def split_csv_env(var_name, default=""):
+    return [
+        value.strip()
+        for value in os.environ.get(var_name, default).split(',')
+        if value.strip()
+    ]
+
+
 def load_dotenv_file(dotenv_path):
     if not dotenv_path.exists():
         return
@@ -53,11 +61,10 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-    if host.strip()
-]
+ALLOWED_HOSTS = split_csv_env(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,r-e-s-q-app-dev.onrender.com',
+)
 
 
 # Application definition
@@ -77,8 +84,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -112,7 +119,9 @@ WSGI_APPLICATION = 'backend_config.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        ssl_require=os.environ.get('DB_SSL_REQUIRE', 'false').lower() == 'true',
     ) if dj_database_url else {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
@@ -164,7 +173,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'false').lower() == 'true'
+CORS_ALLOWED_ORIGINS = split_csv_env(
+    'CORS_ALLOWED_ORIGINS',
+    'https://r-e-s-q-app-dev.vercel.app,http://localhost:5173,http://localhost:3000',
+)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
