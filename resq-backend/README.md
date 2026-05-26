@@ -79,7 +79,7 @@ Separate backend repository for the R.E.S.Q system, implemented with Django REST
 3. Set the Web Service settings:
 
    - Root Directory: `resq-backend`
-   - Build Command: `./build.sh`
+   - Build Command: `bash build.sh`
    - Start Command: `gunicorn backend_config.wsgi:application`
 
 4. Add these environment variables in Render:
@@ -90,7 +90,7 @@ Separate backend repository for the R.E.S.Q system, implemented with Django REST
    - `CORS_ALLOWED_ORIGINS=https://r-e-s-q-app-dev.vercel.app`
    - `DATABASE_URL=<your-render-postgres-url>`
 
-5. Migrations run automatically during deploy via `build.sh`.
+5. Migrations and demo data seeding run automatically during deploy via `build.sh`.
 
 6. Seed the full RESQ dataset:
 
