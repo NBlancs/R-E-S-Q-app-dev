@@ -58,6 +58,45 @@ Separate backend repository for the R.E.S.Q system, implemented with Django REST
 
    - `python manage.py runserver 127.0.0.1:8000`
 
+## Local Environment File
+
+1. Copy the example environment file:
+
+   - `copy .env.example .env`
+
+2. Edit `.env` with your local values:
+
+   - `SECRET_KEY`
+   - `DEBUG=True`
+   - `ALLOWED_HOSTS=localhost,127.0.0.1`
+
+## Render Deployment
+
+1. Create a PostgreSQL database on Render.
+
+2. Create a new Web Service from this repository.
+
+3. Set the Web Service settings:
+
+   - Root Directory: `resq-backend`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn backend_config.wsgi:application`
+
+4. Add these environment variables in Render:
+
+   - `SECRET_KEY`
+   - `DEBUG=False`
+   - `ALLOWED_HOSTS=<your-render-service>.onrender.com`
+   - `DATABASE_URL=<your-render-postgres-url>`
+
+5. After the service deploys, run migrations:
+
+   - `python manage.py migrate`
+
+6. Seed the full RESQ dataset:
+
+   - `python manage.py seed_database`
+
 ## API Base URL
 
 - `http://127.0.0.1:8000/api/`
