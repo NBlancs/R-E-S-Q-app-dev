@@ -1,4 +1,7 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL
+  || (import.meta.env.DEV ? '/api' : 'https://r-e-s-q-app-dev.onrender.com/api')
+).replace(/\/$/, '')
 
 const TOKEN_STORAGE_KEY = 'resq_token'
 const USER_STORAGE_KEY = 'resq_user'

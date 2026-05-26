@@ -56,6 +56,7 @@ const LoginPage = ({ onLogin }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@gmail.com"
+                autoComplete="email"
                 required
               />
             </div>
@@ -68,6 +69,7 @@ const LoginPage = ({ onLogin }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="********"
+                autoComplete="current-password"
                 required
               />
             </div>
