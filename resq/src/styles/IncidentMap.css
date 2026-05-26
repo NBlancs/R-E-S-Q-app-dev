@@ -21,6 +21,12 @@
   font-size: 1.2rem;
 }
 
+.incident-map-subtitle {
+  margin: 0.35rem 0 0;
+  color: #cbd5e1;
+  font-size: 0.88rem;
+}
+
 .incident-map-view {
   flex: 1;
   position: relative;
@@ -28,6 +34,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.incident-map-view .leaflet-container {
+  position: absolute;
+  inset: 0;
 }
 
 .incident-map-view.simple-placeholder {
@@ -41,6 +52,101 @@
   color: #fff;
   font-weight: bold;
   letter-spacing: 1px;
+  position: absolute;
+  z-index: 600;
+}
+
+.incident-map-error {
+  margin: 0.75rem 1.25rem 0;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+
+.fire-pin-marker {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 0 18px rgba(255, 59, 48, 0.55);
+  position: relative;
+}
+
+.fire-pin-marker::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+  background: rgba(255, 59, 48, 0.18);
+  z-index: -1;
+}
+
+.fire-pin-marker--active {
+  background: linear-gradient(135deg, #ff7a00, #ff3b30);
+  animation: firePulse 1.4s ease-in-out infinite;
+}
+
+.fire-pin-marker--resolved {
+  background: linear-gradient(135deg, #64748b, #334155);
+  box-shadow: 0 0 12px rgba(100, 116, 139, 0.45);
+}
+
+.fire-pin-marker__flame {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+@keyframes firePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.fire-pin-popup .leaflet-popup-content-wrapper {
+  background: #111827;
+  color: #fff;
+  border-radius: 10px;
+}
+
+.fire-pin-popup .leaflet-popup-tip {
+  background: #111827;
+}
+
+.fire-pin-popup__content h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+}
+
+.fire-pin-popup__content p {
+  margin: 0.25rem 0;
+  font-size: 0.86rem;
+}
+
+.fire-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  text-transform: capitalize;
+}
+
+.fire-status-badge--open,
+.fire-status-badge--investigating {
+  background: rgba(255, 59, 48, 0.16);
+  color: #ff6b6b;
+}
+
+.fire-status-badge--resolved {
+  background: rgba(100, 116, 139, 0.22);
+  color: #cbd5e1;
 }
 
 .map-marker {
@@ -148,6 +254,22 @@
 
 .btn-show:hover {
   background: #3b82f6;
+}
+
+.btn-extinguish {
+  margin-left: 0.4rem;
+  background: #10b981;
+  color: #fff;
+  border: none;
+}
+
+.btn-extinguish:hover {
+  background: #059669;
+}
+
+.btn-extinguish:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-delete {

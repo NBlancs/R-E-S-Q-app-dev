@@ -6,15 +6,19 @@ import '../styles/Header.css';
 const Header = ({
   onLogout,
   alerts = [],
-  onAcknowledgeAlert,
+  onMarkAlertRead,
+  onMarkAlertUnread,
+  onDismissAlert,
   roleLabel = 'Admin',
   userAvatar = '',
   navItems = [],
-  canAcknowledgeAlerts = true,
+  canDismissAlerts = true,
 }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
+
+  const unreadCount = alerts.filter((alert) => !alert.isRead && !alert.isDismissed).length;
 
   const handleToggleNotifications = () => {
     setShowNotifications((prev) => {
@@ -77,8 +81,8 @@ const Header = ({
                 fill="currentColor"
               />
             </svg>
-            {alerts.length > 0 && (
-              <span className="notification-badge">{alerts.length}</span>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount}</span>
             )}
           </button>
 
@@ -92,26 +96,46 @@ const Header = ({
                 alerts.map((alert) => (
                   <article
                     key={alert.id}
-                    className={`notification-item ${alert.priority}`}
+                    className={`notification-item ${alert.priority} ${alert.isDismissed ? 'notification-item--dismissed' : ''} ${!alert.isRead && !alert.isDismissed ? 'notification-item--unread' : ''}`}
                   >
                     <div className="notification-info">
                       <h4>{alert.title}</h4>
                       <p>{alert.location}</p>
                       <span>{alert.time}</span>
+                      <span>{(alert.confidence * 100).toFixed(1)}% confidence</span>
+                      <span>
+                        {alert.isDismissed ? 'Dismissed' : alert.isRead ? 'Read' : 'Unread'}
+                      </span>
                     </div>
-                    {canAcknowledgeAlerts && (
-                      <button
-                        type="button"
-                        className="notification-ack-btn"
-                        onClick={() => {
-                          onAcknowledgeAlert(alert.id);
-                          setShowNotifications(false);
-                          navigate('/camera-feed');
-                        }}
-                      >
-                        Acknowledge
-                      </button>
-                    )}
+                    <div className="notification-actions">
+                      {alert.isRead ? (
+                        <button
+                          type="button"
+                          className="notification-toggle-btn"
+                          onClick={() => onMarkAlertUnread(alert.id)}
+                        >
+                          Mark Unread
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="notification-toggle-btn"
+                          onClick={() => onMarkAlertRead(alert.id)}
+                        >
+                          Mark Read
+                        </button>
+                      )}
+
+                      {canDismissAlerts && (
+                        <button
+                          type="button"
+                          className="notification-dismiss-btn"
+                          onClick={() => onDismissAlert(alert.id)}
+                        >
+                          Dismiss
+                        </button>
+                      )}
+                    </div>
                   </article>
                 ))
               )}

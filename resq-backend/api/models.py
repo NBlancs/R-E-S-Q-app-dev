@@ -36,11 +36,15 @@ class Alert(models.Model):
 	]
 
 	alert_code = models.CharField(max_length=20, unique=True)
+	event_id = models.CharField(max_length=36, blank=True, default="", db_index=True)
 	title = models.CharField(max_length=160)
 	location = models.CharField(max_length=160)
 	priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+	confidence = models.FloatField(default=0.0)
 	acknowledged = models.BooleanField(default=False)
 	acknowledged_at = models.DateTimeField(null=True, blank=True)
+	dismissed = models.BooleanField(default=False)
+	dismissed_at = models.DateTimeField(null=True, blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -110,10 +114,14 @@ class Incident(models.Model):
 	]
 
 	incident_code = models.CharField(max_length=20, unique=True)
+	event_id = models.CharField(max_length=36, blank=True, default="", db_index=True)
 	incident_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
 	location = models.CharField(max_length=180)
 	detection_method = models.CharField(max_length=20, choices=METHOD_CHOICES)
 	time_reported = models.DateTimeField(default=timezone.now)
+	latitude = models.FloatField(null=True, blank=True)
+	longitude = models.FloatField(null=True, blank=True)
+	confidence = models.FloatField(default=0.0)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_INVESTIGATING)
 	camera = models.ForeignKey(
 		Camera,

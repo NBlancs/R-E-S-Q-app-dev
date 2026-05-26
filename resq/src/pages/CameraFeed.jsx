@@ -1,9 +1,9 @@
 import CameraPanel from '../components/CameraPanel';
 
-const CameraFeed = () => {
+const CameraFeed = ({ onFireDetected }) => {
   return (
     <>
-      <CameraPanel />
+      <CameraPanel onFireDetected={onFireDetected} />
     </>
   );
 };

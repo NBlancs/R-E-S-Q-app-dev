@@ -6,22 +6,26 @@ import Footer from './Footer';
 const Layout = ({
   onLogout,
   alerts,
-  onAcknowledgeAlert,
+  onMarkAlertRead,
+  onMarkAlertUnread,
+  onDismissAlert,
   roleLabel = 'Admin',
   userAvatar = '',
   navItems = [],
-  canAcknowledgeAlerts = true,
+  canDismissAlerts = true,
 }) => {
   return (
     <div className="dashboard-container">
       <Header
         onLogout={onLogout}
         alerts={alerts}
-        onAcknowledgeAlert={onAcknowledgeAlert}
+        onMarkAlertRead={onMarkAlertRead}
+        onMarkAlertUnread={onMarkAlertUnread}
+        onDismissAlert={onDismissAlert}
         roleLabel={roleLabel}
         userAvatar={userAvatar}
         navItems={navItems}
-        canAcknowledgeAlerts={canAcknowledgeAlerts}
+        canDismissAlerts={canDismissAlerts}
       />
       <main className="dashboard-content">
         <Outlet />

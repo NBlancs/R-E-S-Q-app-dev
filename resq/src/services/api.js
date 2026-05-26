@@ -136,6 +136,14 @@ export const acknowledgeAlert = async (id) => request(`/alerts/${id}/acknowledge
   method: 'POST',
 })
 
+export const markAlertUnread = async (id) => request(`/alerts/${id}/unread/`, {
+  method: 'POST',
+})
+
+export const dismissAlert = async (id) => request(`/alerts/${id}/dismiss/`, {
+  method: 'POST',
+})
+
 export const fetchCameras = async () => request('/cameras/')
 
 export const createCamera = async (payload) => request('/cameras/', {
@@ -153,6 +161,11 @@ export const deleteCamera = async (id) => request(`/cameras/${id}/`, {
 })
 
 export const fetchIncidents = async () => request('/incidents/')
+
+export const recordFireDetectionEvent = async (payload) => request('/detections/fire-event/', {
+  method: 'POST',
+  body: payload,
+})
 
 export const createIncident = async (payload) => request('/incidents/', {
   method: 'POST',

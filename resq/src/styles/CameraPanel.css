@@ -1,15 +1,106 @@
-/* Camera Placeholder */
-.camera-placeholder {
-    background-color: #000;
-    color: #fff;
-    /* height: 250px; */
-    border-radius: 4px;
-    overflow: hidden;
+.camera-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
-.camera-video {
+.camera-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.camera-control select,
+.camera-control input {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #d9d9d9;
+    font-size: 0.9rem;
+    min-width: 180px;
+}
+
+.camera-control--wide input {
+    min-width: 320px;
+}
+
+.camera-control--checkbox {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.camera-control--checkbox input {
+    min-width: auto !important;
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.camera-frame {
+    position: relative;
+    background-color: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    min-height: 240px;
+}
+
+.camera-media {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
     display: block;
+    object-fit: contain;
+    z-index: 1;
+}
+
+.camera-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f8fafc;
+    font-size: 0.95rem;
+    min-height: 240px;
+}
+
+.camera-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.camera-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.camera-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #1f2937;
+    font-size: 0.85rem;
+}
+
+.camera-pill--alert {
+    background: #ffe4e6;
+    color: #b42318;
+}
+
+.camera-error {
+    margin-top: 0.75rem;
+    color: #b42318;
+    font-size: 0.9rem;
 }

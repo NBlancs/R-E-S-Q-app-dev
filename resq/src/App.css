@@ -200,6 +200,14 @@
   margin-bottom: 0.65rem;
 }
 
+.notification-item--unread {
+  box-shadow: inset 0 0 0 1px rgba(255, 59, 48, 0.22);
+}
+
+.notification-item--dismissed {
+  opacity: 0.62;
+}
+
 .notification-item:last-child {
   margin-bottom: 0;
 }
@@ -231,7 +239,14 @@
   margin-bottom: 0.45rem;
 }
 
-.notification-ack-btn {
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.notification-toggle-btn,
+.notification-dismiss-btn {
   background: #ff3b30;
   border: none;
   color: white;
@@ -239,4 +254,20 @@
   padding: 0.35rem 0.55rem;
   font-size: 0.75rem;
   cursor: pointer;
+}
+
+.notification-toggle-btn {
+  background: #2d6cdf;
+}
+
+.notification-toggle-btn:hover {
+  background: #2457b4;
+}
+
+.notification-dismiss-btn {
+  background: #d92d20;
+}
+
+.notification-dismiss-btn:hover {
+  background: #b42318;
 }

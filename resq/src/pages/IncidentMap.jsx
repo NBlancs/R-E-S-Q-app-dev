@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react';
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { MapContainer, Marker, Popup, TileLayer, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { fetchIncidents, updateIncident } from '../services/api';
+import { toFrontendIncident } from '../services/mappers';
 import '../styles/IncidentMap.css';
 import '../styles/IncidentsTable.css';
 
@@ -20,167 +22,126 @@ const defaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = defaultIcon;
 
-const PingModal = ({
-  isOpen,
-  mode = 'view',
-  coords,
-  name,
-  description,
-  onClose,
-  onSave,
-  onRemove,
-  onNameChange,
-  onDescriptionChange,
-}) => {
-  if (!isOpen) return null;
+const DEFAULT_CENTER = [8.4542, 124.6319];
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(event) => event.stopPropagation()}>
-        {mode === 'add' ? (
-          <>
-            <h3>Add Ping</h3>
-            <p>Coordinates: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>
-
-            <div className="modal-form-grid">
-              <div className="field">
-                <label>Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => onNameChange && onNameChange(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>Description</label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(event) => onDescriptionChange && onDescriptionChange(event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-add" onClick={onSave}>Save</button>
-              <button className="btn btn-cancel" onClick={onClose}>Cancel</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h3>Ping Details</h3>
-            <p>Name: {name || '—'}</p>
-            <p>Coordinates: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>
-            <p>Description: {description || '—'}</p>
-
-            <div className="modal-actions">
-              <button className="btn" onClick={onClose}>Close</button>
-              {onRemove && (
-                <button className="btn btn-delete" onClick={onRemove}>Remove</button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const PingList = ({ markers = [], onLocate, onRemove }) => {
-  if (markers.length === 0) {
-    return <p className="no-pings">No pings yet</p>;
+const toDateValue = (value) => {
+  if (!value) {
+    return null;
   }
 
-  return (
-    <div className="ping-list">
-      <table className="incidents-table ping-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Coordinates</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {markers.map((marker) => (
-            <tr key={marker.id}>
-              <td>{marker.name || '-'}</td>
-              <td>{marker.description || '-'}</td>
-              <td>{marker.lat.toFixed(3)}, {marker.lng.toFixed(3)}</td>
-              <td>
-                <button className="btn btn-show" onClick={() => onLocate(marker)}>Show</button>
-                <button className="btn btn-delete" onClick={() => onRemove(marker)}>Remove</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const IncidentMap = () => {
-  const [markers, setMarkers] = useState([]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [modalCoords, setModalCoords] = useState(null);
-  const [newName, setNewName] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [selectedMarker, setSelectedMarker] = useState(null);
+const formatIncidentTimestamp = (incident) => {
+  const dateValue = toDateValue(`${incident.date}T${incident.time || '00:00'}:00`);
 
+  if (!dateValue) {
+    return 'Unknown time';
+  }
+
+  return dateValue.toLocaleString();
+};
+
+const buildFirePinIcon = (status) => L.divIcon({
+  className: '',
+  html: `
+    <div class="fire-pin-marker fire-pin-marker--${status === 'resolved' ? 'resolved' : 'active'}">
+      <span class="fire-pin-marker__flame" aria-hidden="true">🔥</span>
+    </div>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 38],
+  popupAnchor: [0, -34],
+});
+
+const IncidentMap = () => {
+  const [incidents, setIncidents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [resolvingIds, setResolvingIds] = useState(new Set());
   const mapRef = useRef(null);
 
-  const MapClickHandler = () => {
-    useMapEvents({
-      click(event) {
-        setModalCoords(event.latlng);
-        setNewName('');
-        setNewDescription('');
-        setIsAddModalOpen(true);
-      },
-    });
-
-    return null;
+  const loadIncidents = async () => {
+    try {
+      const response = await fetchIncidents();
+      const nextIncidents = Array.isArray(response) ? response.map(toFrontendIncident) : [];
+      setIncidents(nextIncidents);
+      setError('');
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to load fire pins.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddMarker = () => {
-    if (!modalCoords) {
-      return;
-    }
+  useEffect(() => {
+    let isMounted = true;
 
-    const newMarker = {
-      id: Date.now(),
-      lat: modalCoords.lat,
-      lng: modalCoords.lng,
-      name: newName,
-      description: newDescription,
+    const refresh = async () => {
+      if (!isMounted) {
+        return;
+      }
+
+      await loadIncidents();
     };
 
-    setMarkers((prev) => [...prev, newMarker]);
-    setIsAddModalOpen(false);
-    setModalCoords(null);
-  };
+    refresh();
+    const intervalId = window.setInterval(refresh, 15000);
 
-  const handleLocateMarker = (marker) => {
-    if (mapRef.current) {
-      mapRef.current.setView([marker.lat, marker.lng], mapRef.current.getZoom());
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const firePins = incidents.filter((incident) => (
+    Number.isFinite(incident.latitude)
+    && Number.isFinite(incident.longitude)
+    && incident.status !== 'resolved'
+  ));
+
+  const handleLocateIncident = (incident) => {
+    if (mapRef.current && Number.isFinite(incident.latitude) && Number.isFinite(incident.longitude)) {
+      mapRef.current.flyTo([incident.latitude, incident.longitude], Math.max(mapRef.current.getZoom(), 15), {
+        animate: true,
+      });
     }
-
-    setSelectedMarker(marker);
   };
 
-  const handleRemoveMarker = (marker) => {
-    setMarkers((prev) => prev.filter((item) => item.id !== marker.id));
+  const handleResolveIncident = async (incident) => {
+    const incidentId = incident.backendId;
 
-    if (selectedMarker && selectedMarker.id === marker.id) {
-      setSelectedMarker(null);
+    setResolvingIds((prev) => {
+      const next = new Set(prev);
+      next.add(incidentId);
+      return next;
+    });
+    setError('');
+
+    try {
+      await updateIncident(incidentId, { status: 'resolved' });
+      setIncidents((prev) => prev.map((item) => (
+        item.backendId === incidentId ? { ...item, status: 'resolved' } : item
+      )));
+    } catch (resolveError) {
+      setError(resolveError.message || 'Unable to mark the fire as extinguished.');
+    } finally {
+      setResolvingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(incidentId);
+        return next;
+      });
     }
   };
 
   return (
     <div className="incident-map-container">
       <div className="incident-map-header">
-        <h2>Live Incident Map</h2>
+        <h2>BFP Fire Map</h2>
+        <p className="incident-map-subtitle">
+          {firePins.length} persisted fire pin{firePins.length === 1 ? '' : 's'} tracked from confirmed detections.
+        </p>
       </div>
 
       <div className="incident-map-view">
@@ -188,52 +149,92 @@ const IncidentMap = () => {
           whenReady={(event) => {
             mapRef.current = event.target;
           }}
-          center={[8.4542, 124.6319]}
+          center={DEFAULT_CENTER}
           zoom={13}
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <MapClickHandler />
 
-          {markers.map((marker) => (
+          {firePins.map((incident) => (
             <Marker
-              key={marker.id}
-              position={[marker.lat, marker.lng]}
+              key={incident.backendId}
+              position={[incident.latitude, incident.longitude]}
+              icon={buildFirePinIcon(incident.status)}
               eventHandlers={{
-                click: () => setSelectedMarker(marker),
+                click: () => handleLocateIncident(incident),
               }}
-            />
+            >
+              <Tooltip direction="top" offset={[0, -18]} opacity={1}>
+                <strong>{incident.location}</strong>
+                <br />
+                {incident.status === 'resolved' ? 'Resolved' : 'Active'} fire pin
+              </Tooltip>
+              <Popup className="fire-pin-popup">
+                <div className="fire-pin-popup__content">
+                  <h3>{incident.location}</h3>
+                  <p><strong>Reported:</strong> {formatIncidentTimestamp(incident)}</p>
+                  <p><strong>Confidence:</strong> {(incident.confidence * 100).toFixed(1)}%</p>
+                  <p><strong>Status:</strong> {incident.status}</p>
+                  <p><strong>Coordinates:</strong> {incident.latitude.toFixed(5)}, {incident.longitude.toFixed(5)}</p>
+                </div>
+              </Popup>
+            </Marker>
           ))}
         </MapContainer>
+
+        {isLoading && <div className="map-placeholder-text">Loading fire pins...</div>}
+        {!isLoading && firePins.length === 0 && (
+          <div className="map-placeholder-text">No fire pins recorded yet</div>
+        )}
       </div>
 
-      <PingList
-        markers={markers}
-        onLocate={handleLocateMarker}
-        onRemove={handleRemoveMarker}
-      />
+      {error && <p className="incident-map-error">{error}</p>}
 
-      <PingModal
-        isOpen={isAddModalOpen}
-        mode="add"
-        coords={modalCoords || { lat: 0, lng: 0 }}
-        name={newName}
-        description={newDescription}
-        onClose={() => setIsAddModalOpen(false)}
-        onNameChange={setNewName}
-        onDescriptionChange={setNewDescription}
-        onSave={handleAddMarker}
-      />
-
-      <PingModal
-        isOpen={!!selectedMarker}
-        mode="view"
-        coords={selectedMarker || { lat: 0, lng: 0 }}
-        name={selectedMarker?.name}
-        description={selectedMarker?.description}
-        onClose={() => setSelectedMarker(null)}
-        onRemove={() => selectedMarker && handleRemoveMarker(selectedMarker)}
-      />
+      <div className="ping-list">
+        <table className="incidents-table ping-table">
+          <thead>
+            <tr>
+              <th>Location</th>
+              <th>Timestamp</th>
+              <th>Confidence</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {firePins.length === 0 ? (
+              <tr>
+                <td colSpan="5">No persisted fire detections yet.</td>
+              </tr>
+            ) : (
+              firePins.map((incident) => (
+                <tr key={incident.backendId}>
+                  <td>{incident.location}</td>
+                  <td>{formatIncidentTimestamp(incident)}</td>
+                  <td>{(incident.confidence * 100).toFixed(1)}%</td>
+                  <td>
+                    <span className={`fire-status-badge fire-status-badge--${incident.status}`}>
+                      {incident.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button className="btn btn-show" onClick={() => handleLocateIncident(incident)}>
+                      Show
+                    </button>
+                    <button
+                      className="btn btn-extinguish"
+                      onClick={() => handleResolveIncident(incident)}
+                      disabled={resolvingIds.has(incident.backendId)}
+                    >
+                      Fire extinguished
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

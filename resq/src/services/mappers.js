@@ -67,10 +67,14 @@ const formatAlertTime = (value) => {
 export const toFrontendAlert = (alert) => ({
   backendId: alert.id,
   id: alert.id,
+  eventId: alert.event_id || '',
   title: alert.title,
   location: alert.location,
   time: formatAlertTime(alert.time || alert.created_at),
   priority: alert.priority || 'medium-priority',
+  confidence: Number(alert.confidence || 0),
+  isRead: Boolean(alert.acknowledged),
+  isDismissed: Boolean(alert.dismissed),
 })
 
 export const toFrontendCamera = (camera) => {
@@ -99,6 +103,7 @@ export const toFrontendIncident = (incident) => {
 
   return {
     backendId: incident.id,
+    eventId: incident.event_id || '',
     incidentCode: incident.incident_code,
     id: `#${incident.incident_code}`,
     type: INCIDENT_TYPE_LABELS[incident.incident_type] || incident.incident_type,
@@ -109,6 +114,9 @@ export const toFrontendIncident = (incident) => {
     status: incident.status,
     camera: incident.camera,
     notes: incident.notes || '',
+    latitude: incident.latitude === null || incident.latitude === undefined ? null : Number(incident.latitude),
+    longitude: incident.longitude === null || incident.longitude === undefined ? null : Number(incident.longitude),
+    confidence: Number(incident.confidence || 0),
   }
 }
 

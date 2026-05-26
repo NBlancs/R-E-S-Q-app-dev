@@ -89,10 +89,14 @@ class IncidentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "incident_code",
+            "event_id",
             "incident_type",
             "location",
             "detection_method",
             "time_reported",
+            "latitude",
+            "longitude",
+            "confidence",
             "status",
             "camera",
             "camera_code",
@@ -120,13 +124,17 @@ class AlertSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "alert_code",
+            "event_id",
             "title",
             "location",
             "priority",
+            "confidence",
             "acknowledged",
             "acknowledged_at",
+            "dismissed",
+            "dismissed_at",
             "time",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["acknowledged", "acknowledged_at", "created_at", "updated_at"]
+        read_only_fields = ["acknowledged", "acknowledged_at", "dismissed", "dismissed_at", "created_at", "updated_at"]

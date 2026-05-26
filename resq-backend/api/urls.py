@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AlertViewSet,
     CameraViewSet,
+    create_fire_event,
     IncidentViewSet,
     LoginView,
     ProfileView,
@@ -20,6 +21,7 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/profile/", ProfileView.as_view(), name="profile"),
+    path("detections/fire-event/", create_fire_event, name="fire-event"),
     path("system/overview/", system_overview, name="system-overview"),
     path("", include(router.urls)),
 ]

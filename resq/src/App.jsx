@@ -11,11 +11,14 @@ import Profile from './pages/Profile'
 import dashboardData from './data/dashboardData.json'
 import {
     acknowledgeAlert,
+    dismissAlert,
     clearAuthSession,
     fetchAlerts,
     fetchProfile,
     getAuthToken,
     getStoredUser,
+    markAlertUnread,
+    recordFireDetectionEvent,
     setAuthSession,
 } from './services/api'
 import { toFrontendAlert } from './services/mappers'
@@ -36,6 +39,46 @@ function App() {
     const [alerts, setAlerts] = useState(dashboardData.alerts);
     const [alertsSource, setAlertsSource] = useState('demo');
     const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+    const replaceAlertInState = (updatedAlert) => {
+        if (!updatedAlert) {
+            return;
+        }
+
+        setAlerts((previous) => {
+            const nextAlert = toFrontendAlert(updatedAlert);
+            const filtered = previous.filter((alert) => alert.backendId !== nextAlert.backendId);
+            return [nextAlert, ...filtered];
+        });
+    };
+
+    const loadAlerts = async (isMounted) => {
+        if (!isLoggedIn) {
+            if (isMounted) {
+                setAlerts(dashboardData.alerts);
+                setAlertsSource('demo');
+            }
+
+            return;
+        }
+
+        try {
+            const response = await fetchAlerts();
+            const nextAlerts = Array.isArray(response) ? response.map(toFrontendAlert) : [];
+
+            if (!isMounted) {
+                return;
+            }
+
+            setAlerts(nextAlerts);
+            setAlertsSource('api');
+        } catch {
+            if (isMounted) {
+                setAlerts(dashboardData.alerts);
+                setAlertsSource('demo');
+            }
+        }
+    };
 
     useEffect(() => {
         let isMounted = true;
@@ -89,40 +132,7 @@ function App() {
     useEffect(() => {
         let isMounted = true;
 
-        const loadAlerts = async () => {
-            if (!isLoggedIn) {
-                if (isMounted) {
-                    setAlerts(dashboardData.alerts);
-                    setAlertsSource('demo');
-                }
-
-                return;
-            }
-
-            try {
-                const response = await fetchAlerts();
-                const nextAlerts = Array.isArray(response) ? response.map(toFrontendAlert) : [];
-
-                if (!isMounted) {
-                    return;
-                }
-
-                if (nextAlerts.length > 0) {
-                    setAlerts(nextAlerts);
-                    setAlertsSource('api');
-                } else {
-                    setAlerts(dashboardData.alerts);
-                    setAlertsSource('demo');
-                }
-            } catch {
-                if (isMounted) {
-                    setAlerts(dashboardData.alerts);
-                    setAlertsSource('demo');
-                }
-            }
-        };
-
-        loadAlerts();
+        loadAlerts(isMounted);
 
         return () => {
             isMounted = false;
@@ -144,16 +154,69 @@ function App() {
         setAlertsSource('demo');
     };
 
-    const handleAcknowledgeAlert = async (id) => {
+    const handleMarkAlertRead = async (id) => {
         if (alertsSource === 'api') {
             try {
-                await acknowledgeAlert(id);
+                const updatedAlert = await acknowledgeAlert(id);
+                replaceAlertInState(updatedAlert);
+                return;
             } catch {
                 // Keep the UI responsive even if the API is temporarily unavailable.
             }
         }
 
-        setAlerts((prev) => prev.filter((alert) => alert.id !== id));
+        setAlerts((prev) => prev.map((alert) => (
+            alert.id === id ? { ...alert, isRead: true } : alert
+        )));
+    };
+
+    const handleMarkAlertUnread = async (id) => {
+        if (alertsSource === 'api') {
+            try {
+                const updatedAlert = await markAlertUnread(id);
+                replaceAlertInState(updatedAlert);
+                return;
+            } catch {
+                // Keep the UI responsive even if the API is temporarily unavailable.
+            }
+        }
+
+        setAlerts((prev) => prev.map((alert) => (
+            alert.id === id ? { ...alert, isRead: false } : alert
+        )));
+    };
+
+    const handleDismissAlert = async (id) => {
+        if (alertsSource === 'api') {
+            try {
+                const updatedAlert = await dismissAlert(id);
+                replaceAlertInState(updatedAlert);
+                return;
+            } catch {
+                // Keep the UI responsive even if the API is temporarily unavailable.
+            }
+        }
+
+        setAlerts((prev) => prev.map((alert) => (
+            alert.id === id ? { ...alert, isDismissed: true, isRead: true } : alert
+        )));
+    };
+
+    const handleFireDetected = async (payload) => {
+        if (!isLoggedIn) {
+            return;
+        }
+
+        try {
+            const response = await recordFireDetectionEvent(payload);
+
+            if (response?.alert) {
+                replaceAlertInState(response.alert);
+                setAlertsSource('api');
+            }
+        } catch {
+            // The camera panel already surfaces the failure if persistence is unavailable.
+        }
     };
 
     const handleUserUpdated = (updatedUser) => {
@@ -183,10 +246,12 @@ function App() {
                             <Layout
                                 onLogout={handleLogout}
                                 alerts={alerts}
-                                onAcknowledgeAlert={handleAcknowledgeAlert}
+                                onMarkAlertRead={handleMarkAlertRead}
+                                onMarkAlertUnread={handleMarkAlertUnread}
+                                onDismissAlert={handleDismissAlert}
                                 roleLabel={currentUser?.role === 'bfp' ? 'BFP' : 'Admin'}
                                 userAvatar={currentUser?.avatar || ''}
-                                canAcknowledgeAlerts={currentUser?.role !== 'bfp'}
+                                canDismissAlerts={currentUser?.role !== 'bfp'}
                                 navItems={
                                     currentUser?.role === 'bfp'
                                         ? [
@@ -217,7 +282,7 @@ function App() {
                         path="/camera-feed"
                         element={
                             <RoleRoute allowedRoles={['admin']} currentRole={currentUser?.role} fallbackPath={fallbackPath}>
-                                <CameraFeed />
+                                <CameraFeed onFireDetected={handleFireDetected} />
                             </RoleRoute>
                         }
                     />
