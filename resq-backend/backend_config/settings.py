@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 try:
     import dj_database_url
 except ImportError:
@@ -117,16 +119,80 @@ WSGI_APPLICATION = 'backend_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-        conn_max_age=600,
-        ssl_require=os.environ.get('DB_SSL_REQUIRE', 'false').lower() == 'true',
-    ) if dj_database_url else {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+
+from urllib.parse import urlparse
+
+
+def _simple_parse_database_url(url: str):
+    parts = urlparse(url)
+    scheme = parts.scheme
+    if scheme.startswith('sqlite'):
+        sqlite_path = url.removeprefix('sqlite:///')
+        if not sqlite_path:
+            sqlite_path = str(BASE_DIR / 'db.sqlite3')
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': sqlite_path,
+        }
+
+    if scheme in ('postgres', 'postgresql', 'postgresql+psycopg2', 'pgsql'):
+        db_name = parts.path.lstrip('/') or 'postgres'
+        host = parts.hostname or 'localhost'
+        port = parts.port or 5432
+        user = parts.username or 'postgres'
+        # Intentionally leave PASSWORD empty so local auth (pg_hba.conf)
+        # or environment variables can provide credentials securely.
+        cfg = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_name,
+            'USER': user,
+            'PASSWORD': '',
+            'HOST': host,
+            'PORT': str(port),
+        }
+        if os.environ.get('DB_SSL_REQUIRE', 'false').lower() == 'true':
+            cfg['OPTIONS'] = {'sslmode': 'require'}
+        return cfg
+
+    raise ImproperlyConfigured(f'Unsupported DATABASE_URL scheme: {scheme}')
+
+
+if DATABASE_URL.startswith('sqlite:'):
+    sqlite_path = DATABASE_URL.removeprefix('sqlite:///')
+    if not sqlite_path:
+        sqlite_path = str(BASE_DIR / 'db.sqlite3')
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': sqlite_path,
+        }
     }
-}
+elif DATABASE_URL:
+    if dj_database_url:
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=600,
+                ssl_require=os.environ.get('DB_SSL_REQUIRE', 'false').lower() == 'true',
+            )
+        }
+    else:
+        DATABASES = {
+            'default': _simple_parse_database_url(DATABASE_URL)
+        }
+elif DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    raise ImproperlyConfigured(
+        'DATABASE_URL must be set when DEBUG is False so production uses PostgreSQL.'
+    )
 
 
 # Password validation

@@ -90,9 +90,11 @@ Separate backend repository for the R.E.S.Q system, implemented with Django REST
    - `CORS_ALLOWED_ORIGINS=https://r-e-s-q-app-dev.vercel.app`
    - `DATABASE_URL=<your-render-postgres-url>`
 
-5. Migrations and demo data seeding run automatically during deploy via `build.sh`.
+5. Migrations run automatically during deploy via `build.sh`, and demo data is seeded only when the database is empty.
 
-6. Seed the full RESQ dataset:
+6. If you are migrating existing SQLite data to PostgreSQL, export the current data first with `dumpdata`, then load it into PostgreSQL after migrations.
+
+7. Seed the full RESQ dataset only for a brand-new empty database:
 
    - `python manage.py seed_database`
 
