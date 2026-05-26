@@ -86,7 +86,7 @@ Separate backend repository for the R.E.S.Q system, implemented with Django REST
 
    - `SECRET_KEY`
    - `DEBUG=False`
-   - `ALLOWED_HOSTS=<your-render-service>.onrender.com`
+   - `ALLOWED_HOSTS=.onrender.com` for the first deploy, then tighten it to `ALLOWED_HOSTS=r-e-s-q-app-dev.onrender.com`
    - `DATABASE_URL=<your-render-postgres-url>`
 
 5. After the service deploys, run migrations:
