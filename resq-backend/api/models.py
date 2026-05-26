@@ -25,6 +25,32 @@ class UserProfile(models.Model):
 		return f"{self.user.username} ({self.role})"
 
 
+class Alert(models.Model):
+	PRIORITY_HIGH = "high-priority"
+	PRIORITY_MEDIUM = "medium-priority"
+	PRIORITY_LOW = "low-priority"
+	PRIORITY_CHOICES = [
+		(PRIORITY_HIGH, "High"),
+		(PRIORITY_MEDIUM, "Medium"),
+		(PRIORITY_LOW, "Low"),
+	]
+
+	alert_code = models.CharField(max_length=20, unique=True)
+	title = models.CharField(max_length=160)
+	location = models.CharField(max_length=160)
+	priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+	acknowledged = models.BooleanField(default=False)
+	acknowledged_at = models.DateTimeField(null=True, blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ["-created_at"]
+
+	def __str__(self):
+		return f"{self.alert_code} - {self.title}"
+
+
 class Camera(models.Model):
 	STATUS_ONLINE = "online"
 	STATUS_OFFLINE = "offline"

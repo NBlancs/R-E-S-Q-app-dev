@@ -10,12 +10,15 @@ import Reports from './pages/Reports'
 import Profile from './pages/Profile'
 import dashboardData from './data/dashboardData.json'
 import {
+    acknowledgeAlert,
     clearAuthSession,
+    fetchAlerts,
     fetchProfile,
     getAuthToken,
     getStoredUser,
     setAuthSession,
 } from './services/api'
+import { toFrontendAlert } from './services/mappers'
 import './dashboard/Dashboard.css'
 import './App.css'
 
@@ -31,6 +34,7 @@ function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [alerts, setAlerts] = useState(dashboardData.alerts);
+    const [alertsSource, setAlertsSource] = useState('demo');
     const [isAuthChecking, setIsAuthChecking] = useState(true);
 
     useEffect(() => {
@@ -82,6 +86,49 @@ function App() {
         };
     }, []);
 
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadAlerts = async () => {
+            if (!isLoggedIn) {
+                if (isMounted) {
+                    setAlerts(dashboardData.alerts);
+                    setAlertsSource('demo');
+                }
+
+                return;
+            }
+
+            try {
+                const response = await fetchAlerts();
+                const nextAlerts = Array.isArray(response) ? response.map(toFrontendAlert) : [];
+
+                if (!isMounted) {
+                    return;
+                }
+
+                if (nextAlerts.length > 0) {
+                    setAlerts(nextAlerts);
+                    setAlertsSource('api');
+                } else {
+                    setAlerts(dashboardData.alerts);
+                    setAlertsSource('demo');
+                }
+            } catch {
+                if (isMounted) {
+                    setAlerts(dashboardData.alerts);
+                    setAlertsSource('demo');
+                }
+            }
+        };
+
+        loadAlerts();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isLoggedIn]);
+
     const fallbackPath = currentUser?.role === 'bfp' ? '/bfp' : '/overview';
 
     const handleLogin = (user) => {
@@ -93,9 +140,19 @@ function App() {
         clearAuthSession();
         setCurrentUser(null);
         setIsLoggedIn(false);
+        setAlerts(dashboardData.alerts);
+        setAlertsSource('demo');
     };
 
-    const handleAcknowledgeAlert = (id) => {
+    const handleAcknowledgeAlert = async (id) => {
+        if (alertsSource === 'api') {
+            try {
+                await acknowledgeAlert(id);
+            } catch {
+                // Keep the UI responsive even if the API is temporarily unavailable.
+            }
+        }
+
         setAlerts((prev) => prev.filter((alert) => alert.id !== id));
     };
 

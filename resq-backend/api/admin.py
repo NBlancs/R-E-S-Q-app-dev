@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import Camera, Incident, UserProfile
+from .models import Alert, Camera, Incident, UserProfile
+
+
+@admin.register(Alert)
+class AlertAdmin(admin.ModelAdmin):
+	list_display = ("alert_code", "title", "location", "priority", "acknowledged", "created_at")
+	list_filter = ("priority", "acknowledged")
+	search_fields = ("alert_code", "title", "location")
 
 
 @admin.register(UserProfile)

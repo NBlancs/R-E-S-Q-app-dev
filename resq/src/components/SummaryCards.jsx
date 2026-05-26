@@ -1,3 +1,5 @@
+import dashboardData from '../data/dashboardData.json';
+import camerasData from '../data/cameras.json';
 import '../styles/SummaryCards.css';
 
 const trendData = [
@@ -21,6 +23,13 @@ const responseTeamStatus = [
   { label: 'On Standby', value: 2, detail: 'Central Station', colorClass: 'standby' },
   { label: 'En Route', value: 3, detail: 'Heading to Zone B', colorClass: 'enroute' },
 ];
+
+const demoSummary = {
+  camera_count: camerasData.length,
+  incident_count: dashboardData.incidents?.length ?? 0,
+  open_incidents: dashboardData.incidents?.filter((incident) => incident.status !== 'resolved').length ?? 0,
+  resolved_incidents: dashboardData.incidents?.filter((incident) => incident.status === 'resolved').length ?? 0,
+};
 
 const buildLinePath = (values, width, height, minValue, maxValue) => {
   const xStep = width / (values.length - 1);
@@ -84,10 +93,10 @@ const SensorDonut = ({ data, size = 170, strokeWidth = 24 }) => {
 const SummaryCards = ({ summary }) => {
   const sensorTotal = sensorHealth.reduce((sum, item) => sum + item.value, 0);
   const liveSummary = [
-    { label: 'Cameras', value: summary?.camera_count ?? '-' },
-    { label: 'Incidents', value: summary?.incident_count ?? '-' },
-    { label: 'Open', value: summary?.open_incidents ?? '-' },
-    { label: 'Resolved', value: summary?.resolved_incidents ?? '-' },
+    { label: 'Cameras', value: summary?.camera_count ?? demoSummary.camera_count },
+    { label: 'Incidents', value: summary?.incident_count ?? demoSummary.incident_count },
+    { label: 'Open', value: summary?.open_incidents ?? demoSummary.open_incidents },
+    { label: 'Resolved', value: summary?.resolved_incidents ?? demoSummary.resolved_incidents },
   ];
 
   const chartWidth = 420;

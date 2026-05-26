@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Camera, Incident, UserProfile
+from .models import Alert, Camera, Incident, UserProfile
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -12,6 +12,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ["username", "email", "role", "avatar"]
+
+
+class ProfileUpdateSerializer(serializers.Serializer):
+    avatar = serializers.URLField(required=False, allow_blank=True)
+
+    def update(self, instance, validated_data):
+        if "avatar" in validated_data:
+            instance.avatar = validated_data["avatar"]
+            instance.save(update_fields=["avatar", "updated_at"])
+        return instance
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -99,3 +109,24 @@ class IncidentSerializer(serializers.ModelSerializer):
         if request and request.user and request.user.is_authenticated:
             validated_data["reported_by"] = request.user
         return super().create(validated_data)
+
+
+class AlertSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    time = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = Alert
+        fields = [
+            "id",
+            "alert_code",
+            "title",
+            "location",
+            "priority",
+            "acknowledged",
+            "acknowledged_at",
+            "time",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["acknowledged", "acknowledged_at", "created_at", "updated_at"]

@@ -51,6 +51,28 @@ const toDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
+const formatAlertTime = (value) => {
+  const parsed = toDate(value)
+
+  if (!parsed) {
+    return ''
+  }
+
+  return parsed.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+export const toFrontendAlert = (alert) => ({
+  backendId: alert.id,
+  id: alert.id,
+  title: alert.title,
+  location: alert.location,
+  time: formatAlertTime(alert.time || alert.created_at),
+  priority: alert.priority || 'medium-priority',
+})
+
 export const toFrontendCamera = (camera) => {
   const lastActiveDate = toDate(camera.last_active)
 

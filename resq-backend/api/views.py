@@ -1,15 +1,19 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Camera, Incident, UserProfile
+from .models import Alert, Camera, Incident, UserProfile
 from .serializers import (
+	AlertSerializer,
 	CameraSerializer,
 	IncidentSerializer,
 	RegisterSerializer,
+	ProfileUpdateSerializer,
 	UserProfileSerializer,
 )
 
@@ -75,6 +79,16 @@ class ProfileView(APIView):
 		profile, _ = UserProfile.objects.get_or_create(user=request.user)
 		return Response(UserProfileSerializer(profile).data)
 
+	def patch(self, request):
+		profile, _ = UserProfile.objects.get_or_create(user=request.user)
+		serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+		serializer.is_valid(raise_exception=True)
+		updated_profile = serializer.save()
+		return Response(UserProfileSerializer(updated_profile).data)
+
+	def put(self, request):
+		return self.patch(request)
+
 
 class CameraViewSet(viewsets.ModelViewSet):
 	queryset = Camera.objects.all()
@@ -86,6 +100,20 @@ class IncidentViewSet(viewsets.ModelViewSet):
 	queryset = Incident.objects.select_related("camera", "reported_by").all()
 	serializer_class = IncidentSerializer
 	permission_classes = [permissions.IsAuthenticated]
+
+
+class AlertViewSet(viewsets.ModelViewSet):
+	queryset = Alert.objects.filter(acknowledged=False).order_by("-created_at")
+	serializer_class = AlertSerializer
+	permission_classes = [permissions.IsAuthenticated]
+
+	@action(detail=True, methods=["post"])
+	def acknowledge(self, request, pk=None):
+		alert = self.get_object()
+		alert.acknowledged = True
+		alert.acknowledged_at = timezone.now()
+		alert.save(update_fields=["acknowledged", "acknowledged_at", "updated_at"])
+		return Response(AlertSerializer(alert).data)
 
 
 @api_view(["GET"])

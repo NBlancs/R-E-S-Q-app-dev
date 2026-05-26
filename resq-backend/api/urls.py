@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AlertViewSet,
     CameraViewSet,
     IncidentViewSet,
     LoginView,
@@ -11,6 +12,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register("alerts", AlertViewSet, basename="alert")
 router.register("cameras", CameraViewSet, basename="camera")
 router.register("incidents", IncidentViewSet, basename="incident")
 

@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from api.models import Camera, Incident, UserProfile
+from api.models import Alert, Camera, Incident, UserProfile
 
 
 class Command(BaseCommand):
@@ -87,6 +87,22 @@ class Command(BaseCommand):
                 "camera": cam2,
                 "reported_by": bfp_user,
                 "notes": "Gas trace under validation.",
+            },
+        )
+        Alert.objects.update_or_create(
+            alert_code="ALERT-001",
+            defaults={
+                "title": "Fire Detected - Zone A",
+                "location": "Sector 4 - Warehouse",
+                "priority": Alert.PRIORITY_HIGH,
+            },
+        )
+        Alert.objects.update_or_create(
+            alert_code="ALERT-002",
+            defaults={
+                "title": "Gas Detected - Zone B",
+                "location": "Office Block 2",
+                "priority": Alert.PRIORITY_MEDIUM,
             },
         )
 

@@ -119,7 +119,18 @@ export const loginUser = async ({ email, password }) => request('/auth/login/', 
 
 export const fetchProfile = async () => request('/auth/profile/')
 
+export const updateProfile = async (payload) => request('/auth/profile/', {
+  method: 'PATCH',
+  body: payload,
+})
+
 export const fetchOverview = async () => request('/system/overview/')
+
+export const fetchAlerts = async () => request('/alerts/')
+
+export const acknowledgeAlert = async (id) => request(`/alerts/${id}/acknowledge/`, {
+  method: 'POST',
+})
 
 export const fetchCameras = async () => request('/cameras/')
 
