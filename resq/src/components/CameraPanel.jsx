@@ -416,7 +416,15 @@ const CameraPanel = ({ onFireDetected }) => {
               alt="ESP32-CAM stream"
               crossOrigin={esp32UseCors ? 'anonymous' : undefined}
               onLoad={() => setIsReady(true)}
-              onError={() => setError('Unable to load the ESP32-CAM stream. Check the URL or network connection.')}
+              onError={() => {
+                if (esp32UseCors) {
+                  setEsp32UseCors(false);
+                  setError('ESP32-CAM stream does not expose browser CORS headers. Falling back to backend snapshot capture.');
+                  return;
+                }
+
+                setError('Unable to load the ESP32-CAM stream. Check the URL or network connection.');
+              }}
             />
           ) : (
             <div className="camera-empty">Waiting for ESP32 stream URL...</div>

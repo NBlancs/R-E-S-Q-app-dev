@@ -14,6 +14,7 @@ from ultralytics import YOLO
 import os
 from datetime import datetime
 import binascii
+from urllib.parse import urlparse, urlunparse
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
@@ -200,14 +201,19 @@ def detect_fire_url(data: dict):
         raise HTTPException(status_code=400, detail="URL is required.")
     if not url.lower().startswith(("http://", "https://")):
         raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
-    if "/stream" in url.lower():
-        raise HTTPException(status_code=400, detail="Use the ESP32-CAM snapshot endpoint (e.g., /capture) for detection.")
+
+    parsed_url = urlparse(url)
+    normalized_path = parsed_url.path.rstrip("/")
+    if normalized_path.lower().endswith("/stream"):
+        parsed_url = parsed_url._replace(path=normalized_path[: -len("/stream")] + "/capture")
+        url = urlunparse(parsed_url)
 
     try:
         request = Request(url, headers={
             "User-Agent": "RESQ-Fire-Detector/1.0",
             "Accept": "image/jpeg,image/*;q=0.9,*/*;q=0.8",
             "Connection": "close",
+            "ngrok-skip-browser-warning": "true",
         })
         with urlopen(request, timeout=5) as response:
             image_bytes = response.read()
